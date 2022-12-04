@@ -83,10 +83,32 @@ let part1_ [n] (file: [n]u8) =
 	(unflattened, round_scores, round_picks)
 
 
+let part2_ [n] (file: [n]u8) =
+	let m = n/4 in
+	let unflattened = unflatten m 4 file in
+	let (A, B, C, X, Y, Z) = (u8.i32 'A', u8.i32 'B', u8.i32 'C', u8.i32 'X', u8.i32 'Y', u8.i32 'Z') in
+	let (R, P, S, Draw, Winn, Loss) = (1, 2, 3, 3, 6, 0) in
+	-- A : Rock, B : Paper, C: Scissors
+	-- X : Loss, Y : Draw, Z : Win
+	-- Rock > Scissors, Scissors > Paper, Paper > Rock
+	let map_mine they me =
+		if (me == X && they == A) then (S + Loss) else
+		if (me == X && they == B) then (R + Loss) else
+		if (me == X && they == C) then (P + Loss) else
+		if (me == Y && they == A) then (R + Draw) else
+		if (me == Y && they == B) then (P + Draw) else
+		if (me == Y && they == C) then (S + Draw) else
+		if (me == Z && they == A) then (P + Winn) else
+		if (me == Z && they == B) then (S + Winn) else
+		if (me == Z && they == C) then (R + Winn) else
+		0 in
+	let round_scores = map (\(x: [4]u8) -> map_mine x[0] x[2]) unflattened in
+	let round_picks = map (\(x: [4]u8) -> ( x[0], x[2])) unflattened in
+	(unflattened, round_scores, round_picks)
+
 
 entry part1 (file: []u8): u32 = 
 	u32.i32 (i32.sum (part1_ file).1)
 
 entry part2 (file: []u8): u32 =
-	let (a, b, c) = (max3 (part1__ file).7) in
-	u32.i32 (a + b + c)
+	u32.i32 (i32.sum (part2_ file).1)
