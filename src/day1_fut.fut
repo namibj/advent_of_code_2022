@@ -33,10 +33,52 @@ let  part1_ (file: []u8) =
 		(file, flags, lengths, offsets, endian_worthness_map, worthyness_adjusted_digit_values, digit_string_values, group_sums, max_sum)
 
 
+let max3 [n] (values: [n]i32): (i32, i32, i32) =
+	let neutral = (i32.lowest, i32.lowest, i32.lowest) in
+	let merge (a, b, c) (d, e, f) = (
+		if a > d then -- a max1; keep
+			if b > d then -- b max2; keep
+				if c > d then -- c max3; keep
+					(a, b, c)
+				else -- d max3; keep
+					(a, b, d)
+			else -- d max2; keep
+				if b > e then -- b max3;  keep
+					(a, d, b)
+				else -- e max3; keep
+					(a, d, e)
+		else -- d max1; keep
+			if e > a then -- e max2; keep
+				if f > a then -- f max3; keep
+					(d, e, f)
+				else -- a max3; keep
+					(d, e, a)
+			else -- a max2; keep
+				if e > b then -- e max3;  keep
+					(d, a, e)
+				else -- b max3; keep
+					(d, a, b)
+		) in
+	reduce_comm (merge) (neutral) (map (\x -> (x, i32.lowest, i32.lowest)) values)
 
 
 
+
+
+--		match (a < d, a < e, a < f, b < d, b < e, b < f, c < f)
+--		case  ( true,  true,  true,  true,  true,  true, true) -> (d, e, f)
+--		case  ( true,  true,  true,  true,  true,  true, true) -> (d, e, f)
+--		case  ( true,  true,  true,  true,  true,  true, true) -> (d, e, f)
+--		case  ( true,  true,  true,  true,  true,  true, true) -> (d, e, f)
+--		let (a d) = if a > d then (a d) else (d a) in
+--		let (d e) = if d > e then (d e) else (e d) in
+--		let (d e) = if d > e then (d e) else (e d) in
+--		let (d e) = if d > e then (d e) else (e d) in
 
 
 entry part1 (file: []u8): u32 = 
 	u32.i32 (part1_ file).8
+
+entry part2 (file: []u8): u32 =
+	let (a, b, c) = (max3 (part1_ file).7) in
+	u32.i32 (a + b + c)

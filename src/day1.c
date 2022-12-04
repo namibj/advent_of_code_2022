@@ -39,7 +39,13 @@ int main(int argc, char **argv) {
 	}
 	break;
 	case '2':
-	{;
+	{
+		uint32_t output;
+		int code = futhark_entry_part2(ctx, &output, input);
+//		printf("after entry part1");
+		if (code) return code;
+		unsigned int output2 = output;
+		printf("%u\n", output2);
 	}
 	break;
 	}
