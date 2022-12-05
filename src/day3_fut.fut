@@ -137,8 +137,35 @@ let part1_ [n] (file: [n]u8) =
 	(flags, lengths, offsets, first_halves, reduced_letters, crushed_letters, value_rough_letters, priority_values, priority_sum)
 
 
+let letter_grouper [n] (letters: [n](u32, u32)) =
+	let m = n/3 in
+	unflatten m 3 letters
+
+let part2_ [n] (file: [n]u8) =
+	let (file, flags, lengths, offsets) = split_lines file in
+	let letter_to_bit_masks (letter: u8): (u32, u32) = (
+		let case_mask = 32u8 in
+		let uppercase_is_zero = case_mask & letter in
+		let shift = letter & 31u8 in
+		let lower_shift = if uppercase_is_zero == 0 then 0 else shift in
+		let upper_shift = if uppercase_is_zero == case_mask then 0 else shift in
+		(1u32 << (u32.u8 lower_shift), 1u32 << (u32.u8 upper_shift))
+	) in
+	let mapped_letters = map (\x -> if x == newline then (0, 0) else letter_to_bit_masks x) file in
+	--let first_halves = first_halves_map flags lengths in 
+	--let zipper_letters = zip first_halves mapped_letters in
+	let reduced_letters = segmented_reduce (\x y -> ((x.0 | y.0, x.1 | y.1)) ) (1u32, 1u32) (flags) (mapped_letters) -- (thing that splits letter mappings into a first half and a second half branch and keeps them separate until return from this segmented reduce; comparing first with second halves happens AFTER this reduce)
+	in let grouped_letters = letter_grouper (init reduced_letters)
+	let crushed_letters = map (\x -> (x[0].0 & x[1].0 & x[2].0, x[0].1 & x[1].1 & x[2].1)) grouped_letters in
+	let value_rough_letters = map (\x -> ((u32.ctz (x.0 ^ 1u32) |> u32.i32) & !32u32, (u32.ctz (x.1 ^ 1u32) |> u32.i32) & !32u32 )) crushed_letters in
+	let priority_values = map (\x -> if x.0 != 0 then x.0 else x.1 + 26) value_rough_letters in
+	let priority_sum = u32.sum (priority_values) in
+
+	(flags, lengths, offsets, reduced_letters, crushed_letters, value_rough_letters, priority_values, priority_sum)
+
+
 entry part1 (file: []u8): u32 = 
 	(part1_ file).8
 
 entry part2 (file: []u8): u32 =
-	u32.i32 (i32.sum (part2___ file).1)
+	(part2_ file).7
