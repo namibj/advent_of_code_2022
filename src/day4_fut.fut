@@ -189,12 +189,18 @@ let part1_ [n] (file: [n]u8) =
 		let x = if x[0,0] < x[1,0] || (x[0,0] == x[1,0] && x[0,1] > x[1,1]) then x[:] else x[::-1] in
 		x[0,1] >= x[1,1]
 	in
+	let detect_overlap (x: [2][2]i32): bool =
+		(x[1,0] <= x[0,0] && x[0,0] <= x[1,1]) || -- start of x[0] overlaps with x[1]
+		(x[0,0] <= x[1,0] && x[1,0] <= x[0,1])    -- start of x[1] overlaps with x[0]
+	in
 	let detected_containment = map detect_full_containment grouped_values in
+	let detected_overlap = map detect_overlap grouped_values in
 	let count_fully_contained = length (filter (id) detected_containment) in
-		(file, flags, lengths, offsets, endian_worthness_map, worthyness_adjusted_digit_values, digit_string_values, lines, grouped_values, detected_containment, count_fully_contained)
+	let count_overlapping = length (filter (id) detected_overlap) in
+		(file, flags, lengths, offsets, endian_worthness_map, worthyness_adjusted_digit_values, digit_string_values, lines, grouped_values, detected_containment, count_fully_contained, detected_overlap, count_overlapping)
 
 entry part1 (file: []u8): u32 = 
 	u32.i64 (part1_ file).10
 
 entry part2 (file: []u8): u32 =
-	(part2____ file).7
+	u32.i64 (part1_ file).12
