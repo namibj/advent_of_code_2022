@@ -207,8 +207,42 @@ let part1_ [n] (file: [n]u8) =
 	let test_mapped = [file, (rotate (-1) file), (rotate (-2) file), (rotate (-3) file)]
 	in (mapped, sliced, reduced, added, test_mapped)
 
+let part2_ [n] (file: [n]u8) =
+	let f0 = (rotate (-1) file)
+	let f1 = (rotate (-1) f0)
+	let f2 = (rotate (-1) f1)
+	let f3 = (rotate (-1) f2)
+	let f4 = (rotate (-1) f3)
+	let f5 = (rotate (-1) f4)
+	let f6 = (rotate (-1) f5)
+	let f7 = (rotate (-1) f6)
+	let f8 = (rotate (-1) f7)
+	let f9 = (rotate (-1) f8)
+	let f10 = (rotate (-1) f9)
+	let f11 = (rotate (-1) f10)
+	let f12 = (rotate (-1) f11)
+	let map_fn a b c d e f g h i j k l m n: bool =
+		a != b && a != c && a != d && a != e && a != f && a != g && a != h && a != i && a != j && a != k && a != l && a != m && a != n &&
+		b != c && b != d && b != e && b != f && b != g && b != h && b != i && b != j && b != k && b != l && b != m && b != n &&
+		c != d && c != e && c != f && c != g && c != h && c != i && c != j && c != k && c != l && c != m && c != n &&
+		d != e && d != f && d != g && d != h && d != i && d != j && d != k && d != l && d != m && d != n &&
+		e != f && e != g && e != h && e != i && e != j && e != k && e != l && e != m && e != n &&
+		f != g && f != h && f != i && f != j && f != k && f != l && f != m && f != n &&
+		g != h && g != i && g != j && g != k && g != l && g != m && g != n &&
+		h != i && h != j && h != k && h != l && h != m && h != n &&
+		i != j && i != k && i != l && i != m && i != n &&
+		j != k && j != l && j != m && j != n &&
+		k != l && k != m && k != n &&
+		l != m && l != n &&
+		m != n
+	let mapped = map4 (\x y z u -> if (map_fn x.0 x.1 x.2 x.3 x.4 y.0 y.1 y.2 y.3 y.4 z.0 z.1 z.2 z.3) then u else i64.highest) (zip5 file f0 f1 f2 f3) (zip5 f4 f5 f6 f7 f8) (zip4 f9 f10 f11 f12) (indices file)
+	let sliced = (.[13:]) mapped
+	let reduced = reduce (i64.min) (i64.highest) sliced
+	let added = (+ 1) reduced
+	in (mapped, sliced, reduced, added)
+
 entry part1 (file: []u8): u32 = 
 	u32.i64 (part1_ file).3
 
 entry part2 (file: []u8): u32 =
-	u32.i64 (part1_____ file).12
+	u32.i64 (part2_ file).3
