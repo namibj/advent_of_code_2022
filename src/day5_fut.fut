@@ -215,7 +215,10 @@ module day5 = {
 		val expand_primitive_move [crates] [stacks]: (count: crate_idx) -> (from: crate_idx) -> (to: crate_idx) -> (compound_move [crates] [stacks])
 		val chain_compound_moves [crates] [stacks]: (first: compound_move [crates] [stacks]) -> (second: compound_move [crates] [stacks]) -> (compound_move [crates] [stacks])
 	}
-	module mk_move_compounding (crate_idx_m: integral) : move_compounding with crate_idx = crate_idx_m.t = {
+	module type is_part1 = {
+		val expand_direction_mod [n]: (x: [n]i64) ->  [n]i64
+	}
+	module mk_move_compounding (crate_idx_m: integral) (ip1: is_part1) : move_compounding with crate_idx = crate_idx_m.t = {
 		type crate_idx = crate_idx_m.t
 		type compound_move [crates] [stacks] = {
 			crate_map: [crates]crate_idx,
@@ -235,7 +238,7 @@ module day5 = {
 			let crate_map = replicate crates idx_0
 			let to_ = to_i64 to - 1
 			in {
-				crate_map = crate_map with [:count_] = map crate_idx_m.i64 (reverse (iota count_)),
+				crate_map = crate_map with [:count_] = map crate_idx_m.i64 (ip1.expand_direction_mod (iota count_)),
 				start_stack_heights = (replicate stacks idx_0) with [from_] = count,--concat_to stacks ((replicate from_ idx_0) ++ [count]) (replicate (stacks - from_ - 1) idx_0),
 				end_stack_heights = (replicate stacks idx_0) with [to_] = count--concat_to stacks ((replicate to_ idx_0) ++ [count]) (replicate (stacks - to_ - 1) idx_0)
 			}
@@ -329,8 +332,16 @@ module day5 = {
 			--in expand_primitive_move idx_0 idx_0 idx_0
 	}
 
-	module move_u8 = mk_move_compounding u8
-	open move_u8
+	module ip1 : is_part1 = {
+		let expand_direction_mod [n] (x: [n]i64): [n]i64 =
+			reverse x
+	}
+	module ip2 : is_part1 = {
+		let expand_direction_mod [n] (x: [n]i64): [n]i64 =
+			x
+	}
+	module move_u8 = mk_move_compounding u8 ip1
+	module move_u8_p2 = mk_move_compounding u8 ip2
 	type specific_compound_move = {
 		crate_map: [56]u8,
 		start_stack_heights: [9]u8,
@@ -341,7 +352,6 @@ module day5 = {
 	let part1_ [n] (file: [n]u8) =
 		let (file, flags, lengths, offsets) = split_lines file
 		let length_of_header = map2 (\x y -> if x == 1 then y else i32.highest) lengths offsets |> i32.minimum |> (+ -1) |> i32.to_i64
-		--let lines_of_header = map2 (\x y -> if x == 1 then y else i64.highest) lengths (indices lengths) |> i64.minimum
 		let lines_of_header = (length_of_header / (i32.to_i64 lengths[0]))
 		let stacks = ((i32.to_i64 lengths[0])/4)
 		let header = unflatten_3d lines_of_header stacks 4 file[:length_of_header] |> transpose
@@ -360,10 +370,10 @@ module day5 = {
 		let start_of_moves: i64 = lines_of_header + 1
 		let moves = map (uncurry parse_move) ((zip (rotate (-1) offsets)[start_of_moves:] lengths[start_of_moves:]) |> init)
 		let expand_uncurry_move (count: u8) (from: u8) (to: u8): specific_compound_move =
-			expand_primitive_move count from to
+			move_u8.expand_primitive_move count from to
 		let expanded_moves: []specific_compound_move = map (\x -> expand_uncurry_move x.0 x.1 x.2) moves
 		let zero_move = {crate_map = replicate 56 0, start_stack_heights = replicate 9 0, end_stack_heights = replicate 9 0}
-		let combined_move = reduce (chain_compound_moves) (zero_move) expanded_moves
+		let combined_move = reduce (move_u8.chain_compound_moves) (zero_move) expanded_moves
 		let exclusive_prefix_sum (input) = (scan (+) (0) input) |> map2 (flip (-)) input
 		let offsets_touched_starts = exclusive_prefix_sum combined_move.start_stack_heights
 		let offsets_touched_ends = exclusive_prefix_sum combined_move.end_stack_heights
@@ -400,13 +410,74 @@ module day5 = {
 		crates_on_tops_of_stacks,
 		combined_move)
 
+	let part2_ [n] (file: [n]u8) =
+		let (file, flags, lengths, offsets) = split_lines file
+		let length_of_header = map2 (\x y -> if x == 1 then y else i32.highest) lengths offsets |> i32.minimum |> (+ -1) |> i32.to_i64
+		let lines_of_header = (length_of_header / (i32.to_i64 lengths[0]))
+		let stacks = ((i32.to_i64 lengths[0])/4)
+		let header = unflatten_3d lines_of_header stacks 4 file[:length_of_header] |> transpose
+		let initial_max_stack_height = lines_of_header - 1
+		let stacks_start_raw = header[:,:initial_max_stack_height,2]
+		let initial_stacks_emptynesses = map (map ((== (u8.i32 ' ')) >-> i64.bool) >-> i64.sum) stacks_start_raw
+		let initial_stacks_contents = map2 (rotate) initial_stacks_emptynesses stacks_start_raw
+		let parse_move (offset) (length) =
+			let offset = i32.to_i64 offset
+			let length = i32.to_i64 length
+			let tail = offset + 20
+			let data = (file[offset:tail] :> [20]u8) |> (map (ascii_digit_to_i32 >-> u8.i32))
+			in if length == 20
+				then (data[6] * 10 + data[7], data[14], data[19])
+				else (data[6], data[13], data[18])
+		let start_of_moves: i64 = lines_of_header + 1
+		let moves = map (uncurry parse_move) ((zip (rotate (-1) offsets)[start_of_moves:] lengths[start_of_moves:]) |> init)
+		let expand_uncurry_move (count: u8) (from: u8) (to: u8): specific_compound_move =
+			move_u8_p2.expand_primitive_move count from to
+		let expanded_moves: []specific_compound_move = map (\x -> expand_uncurry_move x.0 x.1 x.2) moves
+		let zero_move = {crate_map = replicate 56 0, start_stack_heights = replicate 9 0, end_stack_heights = replicate 9 0}
+		let combined_move = reduce (move_u8_p2.chain_compound_moves) (zero_move) expanded_moves
+		let exclusive_prefix_sum (input) = (scan (+) (0) input) |> map2 (flip (-)) input
+		let offsets_touched_starts = exclusive_prefix_sum combined_move.start_stack_heights
+		let offsets_touched_ends = exclusive_prefix_sum combined_move.end_stack_heights
+		let want_slots_post_mapping = offsets_touched_ends
+		let valid_map_length = offsets_touched_starts[stacks - 1] + combined_move.start_stack_heights[stacks - 1] |> i64.u8
+		let crate_map = combined_move.crate_map
+		let crates = 56
+		let inverse_crate_map = scatter (replicate crates 0) (map (i64.u8) crate_map[:valid_map_length]) (iota valid_map_length)
+		let want_slots_pre_mapping = map (\x -> inverse_crate_map[i64.u8 x]) want_slots_post_mapping
+		let stacks_ = 9
+		let stack_map_create (heights: [stacks_]u8): [crates]i64 =
+			let mapped_heights = map (i64.u8) heights
+			let sum_heights = (reduce (+) 0 mapped_heights)
+			in (replicate crates 0) with [0:sum_heights] = replicated_iota mapped_heights
+		let stack_map_touched_starts = stack_map_create (combined_move.start_stack_heights :> [stacks_]u8)
+		let want_stacks_post_mapping = iota stacks
+		let want_stacks_pre_mapping = map (\x -> stack_map_touched_starts[want_slots_pre_mapping[x]]) want_stacks_post_mapping
+		let crates_on_tops_of_stacks = map2 (\x y -> initial_stacks_contents[x, (y - i64.u8 offsets_touched_starts[x]) ] ) want_stacks_pre_mapping want_slots_pre_mapping[:stacks]
+		in	(--file, flags, lengths, offsets,
+		length_of_header, --header,
+		lines_of_header, --moves, expanded_moves,
+		stacks,
+		stacks_start_raw,
+		initial_stacks_emptynesses,
+		initial_stacks_contents,
+		offsets_touched_starts,
+		offsets_touched_ends,
+		valid_map_length,
+		want_slots_pre_mapping,
+		inverse_crate_map,
+		stack_map_touched_starts,
+		want_stacks_post_mapping,
+		want_stacks_pre_mapping,
+		crates_on_tops_of_stacks,
+		combined_move)
 	--, endian_worthness_map, worthyness_adjusted_digit_values, digit_string_values, group_sums, max_sum)
 }
 
 let part1_ = day5.part1_
+let part2_ = day5.part2_
 
 entry part1 (file: []u8): []u8 =
 	(part1_ file).14
 
-entry part2 (file: []u8): u32 =
-	u32.i64 (part1_____ file).12
+entry part2 (file: []u8): []u8 =
+	(part2_ file).14

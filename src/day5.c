@@ -47,12 +47,17 @@ int main(int argc, char **argv) {
 	break;
 	case '2':
 	{
-		uint32_t output;
+		struct futhark_u8_1d *output;
 		code = futhark_entry_part2(ctx, &output, input);
-//		printf("after entry part1");
+//		printf("after entry part2");
 		if (code) return code;
-		unsigned int output2 = output;
-		printf("%u\n", output2);
+		code = futhark_context_sync(ctx);
+		if (code) return code;
+		int len = futhark_shape_u8_1d(ctx, output)[0];
+		uint8_t* output_buf = malloc(len + 1);
+		code = futhark_values_u8_1d(ctx, output, output_buf);
+		output_buf[len] = '\0';
+		printf("%.*s\n", len, output_buf);
 	}
 	break;
 	}
