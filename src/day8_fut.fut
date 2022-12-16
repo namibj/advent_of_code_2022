@@ -267,8 +267,40 @@ let part1_8 [n] (file: [n]u8) =
 	let count = flatten flag_grid |> map (i64.bool) |> i64.sum
 	in (line_count, line_length, raw_grid, mapped_raw_grid, valid_mapped_grid, left_to_right_flags, flag_grid, count)
 
+let part2_8 [n] (file: [n]u8) =
+	let line_count = map ((== newline) >-> i32.bool) file |> reduce (+) 0 |> i64.i32
+	let line_length = assert (n % line_count == 0) (n / line_count)
+	let raw_grid = unflatten line_count line_length file
+	let mapped_raw_grid = map (map (ascii_digit_to_i32 >-> u8.i32)) raw_grid
+	let valid_mapped_grid = mapped_raw_grid[:,:(line_length - 1)]
+	let line_beam (height) (line) =
+		map (>= height) line |>
+		segmented_iota |>
+		map ((+ 1) >-> u16.i64) |>
+		rotate (-1)
+	let generate_beams [a] [b] (height) (grid: [a][b]u8): [a][b]u64 =
+		let beam_generator [c] [d] 't 'u
+		(forwards: ([a][b]u8 -> [c][d]u8)) (backwards: ([c][d]u16 -> [a][b]u16)) =
+			(forwards >-> map (line_beam height) >-> backwards) grid
+		let beam_grid = map4 (\e f g h -> map4 (\a b c d -> (u64.u16 a) * (u64.u16 b) * (u64.u16 c) * (u64.u16 d)) e f g h)
+			(beam_generator id id)
+			(beam_generator (map (reverse)) (map (reverse)))
+			(beam_generator (transpose) (transpose))
+			(beam_generator (transpose >-> (map (reverse))) (transpose <-< (map (reverse))))
+		in beam_grid
+	let beam_grid = map (\x -> generate_beams (u8.i64 x) valid_mapped_grid) (iota 10)
+	let scores_pre_map = (map (transpose) (transpose beam_grid))
+	let scores = map2 (\beams_line tree_line -> map2 (\(beams : [10]u64) (tree : u8) -> beams[i64.u8 tree]) beams_line tree_line) (scores_pre_map) valid_mapped_grid
+	let max_score_fn [a] [b] (scores: [a][b]u64) : u64 =
+		let am = a - 1
+		let bm = b - 1
+		let cropped_scores = scores[1:am,1:bm]
+		in flatten cropped_scores |> u64.maximum
+	let max_score = max_score_fn scores
+	in (line_count, line_length, raw_grid, mapped_raw_grid, valid_mapped_grid, beam_grid, scores, max_score)
+
 entry part1 (file: []u8): u32 = 
 	u32.i64 (part1_8 file).7
 
 entry part2 (file: []u8): u32 =
-	u32.i64 (part2_6 file).3
+	u32.u64 (part2_8 file).7
