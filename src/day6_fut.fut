@@ -200,8 +200,8 @@ let part1_____ [n] (file: [n]u8) =
 		(file, flags, lengths, offsets, endian_worthness_map, worthyness_adjusted_digit_values, digit_string_values, lines, grouped_values, detected_containment, count_fully_contained, detected_overlap, count_overlapping)
 
 let part1_ [n] (file: [n]u8) =
-	let mapped = map5 (\a b c d e -> if (a != b && a != c && a != d && b != c && b != d && c != d) then e else i64.highest) file (rotate (-1) file) (rotate (-2) file) (rotate (-3) file) (indices file)
-	let sliced = (.[3:]) mapped
+	let mapped = map5 (\a b c d e -> if e < 4 then i64.highest else if (a != b && a != c && a != d && b != c && b != d && c != d) then e else i64.highest) file (rotate (-1) file) (rotate (-2) file) (rotate (-3) file) (indices file)
+	let sliced = mapped
 	let reduced = reduce (i64.min) (i64.highest) sliced
 	let added = (+ 1) reduced
 	let test_mapped = [file, (rotate (-1) file), (rotate (-2) file), (rotate (-3) file)]
@@ -235,8 +235,8 @@ let part2_ [n] (file: [n]u8) =
 		k != l && k != m && k != n &&
 		l != m && l != n &&
 		m != n
-	let mapped = map4 (\x y z u -> if (map_fn x.0 x.1 x.2 x.3 x.4 y.0 y.1 y.2 y.3 y.4 z.0 z.1 z.2 z.3) then u else i64.highest) (zip5 file f0 f1 f2 f3) (zip5 f4 f5 f6 f7 f8) (zip4 f9 f10 f11 f12) (indices file)
-	let sliced = (.[13:]) mapped
+	let mapped = map4 (\x y z u -> if u < 14 then i64.highest else if (map_fn x.0 x.1 x.2 x.3 x.4 y.0 y.1 y.2 y.3 y.4 z.0 z.1 z.2 z.3) then u else i64.highest) (zip5 file f0 f1 f2 f3) (zip5 f4 f5 f6 f7 f8) (zip4 f9 f10 f11 f12) (indices file)
+	let sliced = mapped
 	let reduced = reduce (i64.min) (i64.highest) sliced
 	let added = (+ 1) reduced
 	in (mapped, sliced, reduced, added)
