@@ -311,10 +311,21 @@ let part1_10 [n] (file: [n]u8) =
 	let signal_strength = map2 (\x i -> x * ((i32.i64 i)+2)) x_vals (indices diffs)
 	let probe i = signal_strength[i-2]
 	let signal_strength_sum_over_targets = probe 20 + probe 60 + probe 100 + probe 140 + probe 180 + probe 220
-	in (instructions, transpose [diffs_with_initial, x_vals, signal_strength, map ((+ 2)>->i32.i64) (indices diffs)], probe 20 , probe 60 , probe 100 , probe 140 , probe 180 , probe 220, signal_strength_sum_over_targets)
+	in (instructions, transpose [diffs_with_initial, x_vals, signal_strength, map ((+ 2)>->i32.i64) (indices diffs)], probe 20 , probe 60 , probe 100 , probe 140 , probe 180 , probe 220, signal_strength_sum_over_targets, x_vals, diffs_with_initial)
+
+let part2_10 [n] (file: [n]u8) =
+	let (_, _, _, _, _, _, _, _, _, x_vals, x_vals_offsets) = part1_10 file
+	let len_xvals = length x_vals
+	let x_grid_raw = unflatten 6 40 x_vals
+	let x_offsets_grid = unflatten 6 40 x_vals_offsets
+	let x_grid = map2 (map2 (-)) x_grid_raw x_offsets_grid
+	let pixels = map2 (\row y -> map2 (\v x -> ((i32.i64 x) >= (v-1) && (i32.i64 x) <= (v+1))) row (indices row)) x_grid (indices x_grid)
+	let line_strings = map (map (\x -> u8.i32 (if x then '#' else '.'))) pixels
+	let formatted_string = transpose line_strings |> (++ [(replicate 6 newline)]) |> transpose |> flatten
+	in (x_vals, len_xvals, x_grid, pixels, formatted_string)
 
 entry part1 (file: []u8): u32 = 
 	u32.i32 (part1_10 file).8
 
-entry part2 (file: []u8): u32 =
-	u32.u64 (part2_8 file).7
+entry part2 (file: []u8): [246]u8 =
+	(part2_10 file).4 :> [246]u8

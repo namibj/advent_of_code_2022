@@ -27,11 +27,13 @@ int main(int argc, char **argv) {
 		remaining_len -= read_val;
 	}
 	struct futhark_u8_1d * input = futhark_new_u8_1d(ctx, buf, len);
+	int code = futhark_context_sync(ctx);
+	if (code) return code;
 	switch (argv[1][0]) {
 	case '1':
 	{
 		uint32_t output;
-		int code = futhark_entry_part1(ctx, &output, input);
+		code = futhark_entry_part1(ctx, &output, input);
 //		printf("after entry part1");
 		if (code) return code;
 		unsigned int output2 = output;
@@ -40,12 +42,17 @@ int main(int argc, char **argv) {
 	break;
 	case '2':
 	{
-		uint32_t output;
-		int code = futhark_entry_part2(ctx, &output, input);
+		struct futhark_u8_1d *output;
+		code = futhark_entry_part2(ctx, &output, input);
 //		printf("after entry part2");
 		if (code) return code;
-		unsigned int output2 = output;
-		printf("%u\n", output2);
+		code = futhark_context_sync(ctx);
+		if (code) return code;
+		int len = futhark_shape_u8_1d(ctx, output)[0];
+		uint8_t* output_buf = malloc(len + 1);
+		code = futhark_values_u8_1d(ctx, output, output_buf);
+		output_buf[len] = '\0';
+		printf("%.*s\n", len, output_buf);
 	}
 	break;
 	}
