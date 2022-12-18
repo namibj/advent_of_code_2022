@@ -42,3 +42,13 @@ day8: day8.o day8_fut.o day8_fut.h
 	$(CC) $(LDFLAGS) -o day8 day8.o day8_fut.o
 
 day8.o: day8.c day8_fut.h
+
+day9: day9.o day9_fut.o day9_fut.h
+	$(CC) $(LDFLAGS) -o day9 day9.o day9_fut.o
+
+day9.o: day9.c day9_fut.h
+
+day10: day10.o day10_fut.o day10_fut.h
+	$(CC) $(LDFLAGS) -o day10 day10.o day10_fut.o
+
+day10.o: day10.c day10_fut.h
