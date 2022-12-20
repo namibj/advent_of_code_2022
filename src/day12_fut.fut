@@ -419,10 +419,12 @@ let part1_12 [n] (file: [n]u8) =
 		matmul partial partial
 	let start_o = start_i * m + start_j
 	let end_o = end_i * m + end_j
-	in (line_count, line_length, raw_grid, mapped_raw_grid, valid_mapped_grid, positions, direct_only_1d, finished_map, start_o, end_o, finished_map[start_o, end_o] )
+	let valid_mapped_1d = flatten_to o valid_mapped_grid
+	let part2 = reduce (i16.min) (i16.highest) (map2 (\distance x -> if x == (u8.i32 'a') then distance else i16.highest) finished_map[:,end_o] valid_mapped_1d)
+	in (line_count, line_length, raw_grid, mapped_raw_grid, valid_mapped_grid, positions, direct_only_1d, finished_map, start_o, end_o, finished_map[start_o, end_o], part2)
 
 entry part1 (file: []u8): u32 =
 	u32.i16 (part1_12 file).10
 
 entry part2 (file: []u8): u64 =
-	u64.i64 (part2_20 file).9
+	u64.i16 (part1_12 file).11
