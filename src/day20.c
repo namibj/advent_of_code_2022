@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 int main(int argc, char **argv) {
 	int err;
@@ -40,12 +41,12 @@ int main(int argc, char **argv) {
 	break;
 	case '2':
 	{
-		uint32_t output;
+		uint64_t output;
 		int code = futhark_entry_part2(ctx, &output, input);
 //		printf("after entry part2");
 		if (code) return code;
 		unsigned int output2 = output;
-		printf("%u\n", output2);
+		printf("%" PRIu64 "\n", output);
 	}
 	break;
 	}

@@ -351,8 +351,38 @@ let part1_20 [n] (file: [n]u8) =
 	let coord_sum = coord_1 + coord_2 + coord_3
 	in (lengths, digit_string_values, instructions, permutation, mix_result, pos_0, coord_1, coord_2, coord_3, coord_sum)
 
-entry part1 (file: []u8): u32 = 
+let part2_20 [n] (file: [n]u8) =
+	let (file, flags, lengths, offsets) = split_lines file
+	let endian_worthness_map = correct_endian_worth_map flags lengths
+	let worthyness_adjusted_digit_values = map2 (\x y -> if (x <= u8.i32 '0' || x > u8.i32 '9') then (if (x == u8.i32 '-') then i32.lowest else 0) else ((ascii_digit_to_i32 x) * (10 ** (y - 1)))) file endian_worthness_map
+	let [lines] digit_string_values: [lines]i32 = segmented_reduce (+) (0) flags worthyness_adjusted_digit_values
+	let [m] instructions_raw: [m](i64) = init (map (\x-> if x < 0 then (-(x + i32.lowest)) else x) digit_string_values) |> map (i64.i32)
+	let instructions = map (* 811589153) instructions_raw
+	let search_i16 (needle: i16) (haystack: []i16): i16 =
+		map2 (\x i -> if x == needle then (i16.i64 i) else i16.highest) haystack (indices haystack) |>
+		i16.minimum
+	let search_i64 (needle: i64) (haystack: []i64): i64 =
+		map2 (\x i -> if x == needle then i else i64.highest) haystack (indices haystack) |>
+		i64.minimum
+	let permutation = loop permutation = (iota m |> map i16.i64) for j < 10 do (
+		loop permutation for i < m do
+			let small_i = i16.i64 i
+			let i_pos = search_i16 small_i permutation |> i64.i16
+			let permutation = (rotate (1 + i_pos)) permutation
+			let mod_shift = instructions[i] % (m -1)
+			in (permutation[:mod_shift] ++ [small_i] ++ (init permutation[mod_shift:])) :> [m]i16
+		)
+	let mix_result = map (\i -> instructions[i]) permutation
+	let pos_0 = search_i64 0 mix_result
+	let mix_result = rotate pos_0 mix_result
+	let coord_1 = mix_result[1000 % m]
+	let coord_2 = mix_result[2000 % m]
+	let coord_3 = mix_result[3000 % m]
+	let coord_sum = coord_1 + coord_2 + coord_3
+	in (lengths, digit_string_values, instructions, permutation, mix_result, pos_0, coord_1, coord_2, coord_3, coord_sum)
+
+entry part1 (file: []u8): u32 =
 	u32.i64 (part1_20 file).9
 
-entry part2 (file: []u8): u32 = 
-	u32.i32 (part1_10 file).8
+entry part2 (file: []u8): u64 =
+	u64.i64 (part2_20 file).9
